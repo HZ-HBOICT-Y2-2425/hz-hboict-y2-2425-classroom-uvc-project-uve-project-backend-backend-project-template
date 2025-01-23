@@ -4,24 +4,156 @@ services:
     build: ./microservice
     volumes:
       - ./microservice/code:/usr/src/app
+      - ./test:/app/test
     networks:
       - msexample
     ports:
       - "3011:3011"
     working_dir: /usr/src/app
     command: bash -c "npm install && npm run dev"
-  gateway:
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: examplepassword
+      DB_NAME: EcoApp
+      DB_PORT: 3306
+    depends_on:
+      - mysql
+
+  apigateway:
     container_name: apigateway
-    build: ./apigateway
+    build: ./apigateway/code
     volumes:
       - ./apigateway/code:/usr/src/app
+      - ./test:/usr/src/app/test 
+      - ./vitest.config.js:/usr/src/app/apigateway/code/vitest.config.js
     networks:
       - msexample
     ports:
       - "3010:3010"
     working_dir: /usr/src/app
     command: bash -c "npm install && npm run dev"
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: examplepassword
+      DB_NAME: EcoApp
+      DB_PORT: 3306
+    depends_on:
+      - mysql
+
+  challenges-api:
+    container_name: challenges-api
+    build: ./Challenges-api
+    volumes:
+      - ./Challenges-api:/usr/src/app
+      - ./database:/usr/src/app/database
+      - ./test:/usr/src/app/test
+      - ./vitest.config.js:/usr/src/app/Challenges-api/vitest.config.js
+    networks:
+      - msexample
+    ports:
+      - "3012:3012"
+    working_dir: /usr/src/app
+    command: bash -c "npm install && node start.js shop"
+    environment:
+      NODE_ENV: test
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: examplepassword
+      DB_NAME: EcoApp
+      DB_PORT: 3306
+    depends_on:
+      - mysql
+
+  shop-api:
+    container_name: shop-api
+    build: ./shop-api
+    volumes:
+      - ./shop-api:/usr/src/app
+      - ./database:/usr/src/app/database
+      - ./test:/usr/src/app/test
+      - ./vitest.config.js:/usr/src/app/shop-api/vitest.config.js
+    networks:
+      - msexample
+    ports:
+      - "3013:3013"
+    working_dir: /usr/src/app
+    command: bash -c "npm install && node start.js shop"
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: examplepassword
+      DB_NAME: EcoApp
+      DB_PORT: 3306
+    depends_on:
+      - mysql
+
+  user-api:
+    container_name: user-api
+    build: ./user-api
+    volumes:
+      - ./user-api:/usr/src/app
+      - ./database:/usr/src/app/database
+    networks:
+      - msexample
+    ports:
+      - "3014:3014"
+    working_dir: /usr/src/app
+    command: bash -c "npm install && node start.js user"
+    environment:
+      DB_HOST: mysql
+      DB_USER: root
+      DB_PASSWORD: examplepassword
+      DB_NAME: EcoApp
+      DB_PORT: 3306
+    depends_on:
+      - mysql
+
+  mysql:
+    container_name: mysql
+    image: mysql:8.0
+    networks:
+      - msexample
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: examplepassword
+      MYSQL_DATABASE: EcoApp
+      MYSQL_USER: sonar
+      MYSQL_PASSWORD: sonarpassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database:/docker-entrypoint-initdb.d
+
+  sonarqube:
+    container_name: sonarqube
+    image: sonarqube:latest
+    networks:
+      - msexample
+    ports:
+      - "9000:9000"
+    environment:
+      SONAR_JDBC_URL: jdbc:mysql://mysql:3306/EcoApp
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonarpassword
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_extensions:/opt/sonarqube/extensions
+    depends_on:
+      - mysql
 
 networks:
   msexample:
     driver: bridge
+
+volumes:
+  mysql_data:
+  sonarqube_data:
+  sonarqube_logs:
+  sonarqube_extensions:
+
+
+
+
